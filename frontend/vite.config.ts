@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "node:path";
@@ -17,6 +17,17 @@ export default defineConfig({
       "@features": path.resolve(rootDir, "src/features"),
       "@shared": path.resolve(rootDir, "src/shared"),
       "@styles": path.resolve(rootDir, "src/styles"),
+    },
+  },
+  test: {
+    globals: true,
+    environment: "jsdom",
+    setupFiles: "./tests/setup.ts",
+    clearMocks: true,
+    mockReset: true,
+    restoreMocks: true,
+    coverage: {
+      reporter: ["text", "html"],
     },
   },
 });

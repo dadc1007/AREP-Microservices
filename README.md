@@ -16,6 +16,7 @@ El alcance actual del repositorio cubre la base del sistema:
 - Un monolito Spring Boot que expone la API REST.
 - Un frontend en React que consume la API y gestiona la sesion con Auth0.
 - Seguridad basada en JWT emitidos por Auth0.
+- Suite de pruebas para backend y frontend.
 
 ## Descripcion general
 
@@ -128,6 +129,69 @@ Variables comunes:
 - Node.js 20 o superior
 - Una instancia de PostgreSQL accesible
 - Credenciales de Auth0 configuradas
+
+## Pruebas
+
+El proyecto cuenta con pruebas implementadas en ambos modulos.
+
+### Pruebas del backend (Spring Boot)
+
+Ubicacion principal de tests:
+
+- `monolith/src/test/java/...`
+
+Incluyen pruebas de:
+
+- Controladores (`PostController`, `FeedController`, `UserController`, `MeController`).
+- Servicios (`PostServiceImpl`, `FeedServiceImpl`, `UserServiceImpl`).
+- Configuracion, mapeadores, DTOs, entidades y manejo de excepciones.
+
+Ejecutar pruebas:
+
+```bash
+cd monolith
+./mvnw test
+```
+
+En Windows:
+
+```powershell
+cd monolith
+.\mvnw.cmd test
+```
+
+### Pruebas del frontend (React + Vitest)
+
+Ubicacion principal de tests:
+
+- `frontend/tests/...`
+
+Incluyen pruebas de:
+
+- Componentes (por ejemplo `PostCard` y `PostList`).
+- Servicios de features (`post`, `stream`, `user`).
+- Manejo de errores compartidos en capa API.
+
+Ejecutar pruebas:
+
+```bash
+cd frontend
+npm run test
+```
+
+Modo watch:
+
+```bash
+cd frontend
+npm run test:watch
+```
+
+Cobertura:
+
+```bash
+cd frontend
+npm run test:coverage
+```
 
 ## Ejecutar el backend
 
