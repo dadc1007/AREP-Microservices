@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: monolith-db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-monolith}
+      POSTGRES_USER: ${DB_USERNAME:-monolith}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-monolith}
+    ports:
+      - "5432:5432"
+    volumes:
+      - monolith-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${DB_USERNAME:-monolith} -d ${DB_NAME:-monolith}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: monolith-app
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-monolith}
+      DB_USERNAME: ${DB_USERNAME:-monolith}
+      DB_PASSWORD: ${DB_PASSWORD:-monolith}
+
+volumes:
+  monolith-db-data:
