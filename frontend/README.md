@@ -1,73 +1,126 @@
-# React + TypeScript + Vite
+# Frontend - AREP-Microservices
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicacion web del proyecto, construida con React + TypeScript + Vite.
 
-Currently, two official plugins are available:
+## Objetivo
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Este modulo implementa la interfaz de usuario para:
 
-## React Compiler
+- Login y logout con Auth0.
+- Creacion de nuevas publicaciones.
+- Visualizacion del stream publico de posts.
+- Consumo de endpoints protegidos usando el access token.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tecnologias principales
 
-## Expanding the ESLint configuration
+- React 19
+- TypeScript
+- Vite
+- React Router
+- TanStack Query
+- HeroUI
+- Auth0 React SDK (`@auth0/auth0-react`)
+- Vitest
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Variables de entorno
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Configura las siguientes variables para el SDK de Auth0 y la API:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- `VITE_AUTH0_DOMAIN`
+- `VITE_AUTH0_CLIENT_ID`
+- `VITE_AUTH0_AUDIENCE`
+- `VITE_API_BASE_URL`
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Requisitos
+
+- Node.js 20 o superior
+- npm
+
+## Instalacion y ejecucion
+
+Desde la carpeta raiz del repositorio:
+
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Pruebas
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Ubicaciones principales:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- `tests/features/...`
+- `tests/shared/api/...`
+
+Incluyen validaciones de:
+
+- Componentes del feed/post.
+- Servicios por feature (`post`, `stream`, `user`).
+- Manejo de errores en capa API compartida.
+
+## Estructura de alto nivel
+
+```text
+frontend/
+├── src/
+│   ├── app/
+│   ├── features/
+│   ├── shared/
+│   └── styles/
+├── tests/
+└── package.json
 ```
+
+## Bitacora de despliegue (S3, CloudFront y Vercel)
+
+Durante el despliegue del frontend en AWS, primero hicimos publicacion directa en S3 como sitio estatico.
+
+Ese enfoque no se dejo como solucion final porque la exposicion quedaba por HTTP y, en ese escenario, la autenticacion con Auth0 presentaba problemas de funcionamiento.
+
+Despues intentamos resolver el tema de HTTPS poniendo CloudFront delante de S3, pero no fue posible completarlo por permisos en la cuenta/recursos de AWS.
+
+Como cierre, se desplego el frontend en Vercel, donde el sitio quedo funcionando con HTTPS y compatible con el flujo de autenticacion.
+
+### Evidencia (pantallazos)
+
+Pantallazo 1 - Intento de despliegue en S3 (hosting estatico)
+
+![[Espacio para pantallazo]](assets/S3.png)
+
+Pantallazo 2 - Sitio expuesto por HTTP y error de Auth0
+
+Error exacto en la consola:
+
+```
+index-BhDrXzGP.js:10 Uncaught Error:
+  auth0-spa-js must run on a secure origin. See https://github.com/auth0/auth0-spa-js/blob/main/FAQ.md#why-do-i-get-auth0-spa-js-must-run-on-a-secure-origin for more information.
+
+  at index-BhDrXzGP.js:10:102925
+  at new As (index-BhDrXzGP.js:12:9)
+  at index-BhDrXzGP.js:12:24103
+  at Jo (index-BhDrXzGP.js:8:52346)
+  at Object.useState (index-BhDrXzGP.js:8:60376)
+  at e.useState (index-BhDrXzGP.js:1:8757)
+  at qs (index-BhDrXzGP.js:12:24081)
+  at To (index-BhDrXzGP.js:8:47557)
+  at vc (index-BhDrXzGP.js:8:70080)
+  at Fc (index-BhDrXzGP.js:8:80359)
+```
+
+[Espacio para pantallazo]
+
+Pantallazo 3 - Intento de configuracion de CloudFront (bloqueo por permisos)
+
+![[Espacio para pantallazo]](assets/cloudFront.png)
+
+Pantallazo 4 - Despliegue final en Vercel con HTTPS
+
+![[Espacio para pantallazo]](assets/vercel.png)
+
+## Relacion con el backend
+
+Este modulo consume la API del backend ubicada en dos lugares:
+
+- API REST del monolito: [../monolith/README.md](../monolith/README.md)
+- API Gateway con Lambdas: [../microservices/README.md](../microservices/README.md)

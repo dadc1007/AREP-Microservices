@@ -1,15 +1,15 @@
-# Lambda Microservices
+# Microservicios Lambda
 
-This folder contains exactly 3 Java microservices implemented as AWS Lambda functions:
+Esta carpeta contiene exactamente 3 microservicios en Java implementados como funciones AWS Lambda:
 
 - `user-service` (`UserLambdaHandler`)
 - `posts-service` (`PostsLambdaHandler`)
 - `stream-service` (`StreamLambdaHandler`)
 
-This project can be deployed in two ways:
+Este proyecto se puede desplegar de dos formas:
 
-- Manual way (recommended for class flow): create each Lambda in AWS and upload jar.
-- SAM way (optional): use `template.yaml` to automate infra.
+- Forma manual (recomendada para flujo de clase): crear cada Lambda en AWS Console y subir el jar.
+- Forma SAM (opcional): usar `template.yaml` para automatizar la infraestructura.
 
 ## Endpoints
 
@@ -19,7 +19,7 @@ This project can be deployed in two ways:
 - `POST /api/posts`
 - `GET /api/feed/public`
 
-## Build per service
+## Compilacion por servicio
 
 ```powershell
 cd user-service
@@ -36,23 +36,31 @@ cd stream-service
 ..\..\monolith\mvnw.cmd -DskipTests package
 ```
 
-Generated jars:
+Jars generados:
 
 - `user-service/target/user-service-lambda.jar`
 - `posts-service/target/posts-service-lambda.jar`
 - `stream-service/target/stream-service-lambda.jar`
 
-## Manual deploy to AWS Lambda (no YAML required)
+## Bitacora de despliegue en AWS (API Gateway + Lambda)
 
-Create one Lambda function per service in AWS Console:
+En esta fase del proyecto, desplegamos el backend de microservicios en AWS usando una funcion Lambda por servicio y API Gateway como punto de entrada.
+
+Primero creamos las tres funciones Lambda en AWS Console, una para cada servicio del dominio:
+
+- Servicio User
+- Servicio Posts
+- Servicio Stream
+
+Configuramos cada Lambda con los siguientes parametros:
 
 - Runtime: Java 17
-- Upload type: .zip or .jar
+- Tipo de carga: .zip o .jar
 - Handler (User): `edu.escuelaing.arep.userservice.lambda.UserLambdaHandler::handleRequest`
 - Handler (Posts): `edu.escuelaing.arep.postsservice.lambda.PostsLambdaHandler::handleRequest`
 - Handler (Stream): `edu.escuelaing.arep.streamservice.lambda.StreamLambdaHandler::handleRequest`
 
-Environment variables for each function:
+Luego configuramos las variables de entorno en cada Lambda:
 
 - `AUTH0_DOMAIN`
 - `AUTH0_AUDIENCE`
@@ -60,9 +68,8 @@ Environment variables for each function:
 - `DB_USERNAME`
 - `DB_PASSWORD`
 - `CORS_ALLOWED_ORIGIN`
-- `STREAM_DEFAULT_LIMIT` (optional)
 
-Then create API Gateway (HTTP API or REST API) and map routes:
+Despues creamos un API Gateway (HTTP API o REST API) y mapeamos cada ruta HTTP a su correspondiente funcion Lambda:
 
 - `POST /api/users` -> User Lambda
 - `PUT /api/users/username` -> User Lambda
@@ -70,33 +77,28 @@ Then create API Gateway (HTTP API or REST API) and map routes:
 - `POST /api/posts` -> Posts Lambda
 - `GET /api/feed/public` -> Stream Lambda
 
-Important:
+Finalmente, habilitamos CORS en API Gateway para el origen del frontend, configuramos los permisos de invocacion de Lambda, y validamos que la URL de invocacion del API Gateway fuera la correcta para usar como `VITE_API_URL` en el frontend.
 
-- Enable CORS in API Gateway for your frontend origin.
-- Configure Lambda invoke permissions from API Gateway (if AWS does not auto-create them).
-- Use the API Gateway invoke URL as frontend `VITE_API_URL`.
+### Evidencia (pantallazos)
 
-## Optional: build and deploy with SAM
+Pantallazo 1 - Lambda User (configuracion de handler clase::funcion)
 
-If you prefer infrastructure-as-code, this repo also includes `template.yaml`:
+![[Espacio para imagen]](assets/userHandler.png)
 
-```powershell
-cd ..\microservices
-sam build
-sam deploy --guided
-```
+Pantallazo 2 - Lambda Posts (configuracion de handler clase::funcion)
 
-## Environment variables
+![[Espacio para imagen]](assets/postHandler.png)
 
-Required:
+Pantallazo 3 - Lambda Stream (configuracion de handler clase::funcion)
 
-- `AUTH0_DOMAIN`
-- `AUTH0_AUDIENCE`
-- `DB_URL`
-- `DB_USERNAME`
-- `DB_PASSWORD`
-- `CORS_ALLOWED_ORIGIN`
+![[Espacio para imagen]](assets/streamHandler.png)
 
-Optional:
+Pantallazo 4 - API Gateway (rutas integradas con Lambdas)
 
-- `STREAM_DEFAULT_LIMIT` (default: `100`)
+![[Espacio para imagen]](assets/API.png)
+
+Pantallazo 5 - Frontend consumiendo la API y validacion
+
+![alt text](assets/test.png)
+
+![alt text](assets/vercel.png)
