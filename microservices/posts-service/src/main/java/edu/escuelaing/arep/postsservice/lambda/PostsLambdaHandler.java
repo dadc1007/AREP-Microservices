@@ -224,14 +224,32 @@ public class PostsLambdaHandler implements RequestHandler<APIGatewayProxyRequest
     }
 
     private static String header(APIGatewayProxyRequestEvent event, String key) {
-        if (event.getHeaders() == null) {
-            return null;
+        if (event.getHeaders() != null) {
+            String value = event.getHeaders().get(key);
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+
+            String lowerCaseValue = event.getHeaders().get(key.toLowerCase());
+            if (lowerCaseValue != null && !lowerCaseValue.isBlank()) {
+                return lowerCaseValue;
+            }
         }
-        String value = event.getHeaders().get(key);
-        if (value != null) {
-            return value;
+
+        if (event.getMultiValueHeaders() != null) {
+            List<String> values = event.getMultiValueHeaders().get(key);
+            if (values != null && !values.isEmpty() && values.get(0) != null && !values.get(0).isBlank()) {
+                return values.get(0);
+            }
+
+            List<String> lowerCaseValues = event.getMultiValueHeaders().get(key.toLowerCase());
+            if (lowerCaseValues != null && !lowerCaseValues.isEmpty() && lowerCaseValues.get(0) != null
+                    && !lowerCaseValues.get(0).isBlank()) {
+                return lowerCaseValues.get(0);
+            }
         }
-        return event.getHeaders().get(key.toLowerCase());
+
+        return null;
     }
 
     private static <T> T parse(String json, Class<T> clazz) {
