@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -60,7 +61,7 @@ public class PostsLambdaHandler implements RequestHandler<APIGatewayProxyRequest
             String method = event.getHttpMethod();
             String path = path(event);
 
-            if ("POST".equalsIgnoreCase(method) && path.endsWith("/api/posts")) {
+            if ("POST".equalsIgnoreCase(method) && isCreatePostPath(path)) {
                 return createPost(event);
             }
 
@@ -178,7 +179,16 @@ public class PostsLambdaHandler implements RequestHandler<APIGatewayProxyRequest
 
         try {
             DecodedJWT decoded = JWT.decode(token);
-            Jwk jwk = JWK_PROVIDER.get(decoded.getKeyId());
+            String keyId = decoded.getKeyId();
+            if (keyId == null || keyId.isBlank()) {
+                throw new ApiException(401, "UNAUTHORIZED", "Invalid token");
+            }
+
+            Jwk jwk = JWK_PROVIDER.get(keyId);
+            if (jwk == null || jwk.getPublicKey() == null) {
+                throw new ApiException(401, "UNAUTHORIZED", "Invalid token");
+            }
+
             Algorithm algorithm = Algorithm.RSA256((RSAPublicKey) jwk.getPublicKey(), null);
             JWTVerifier verifier = JWT.require(algorithm)
                     .withIssuer(ISSUER)
@@ -197,6 +207,7 @@ public class PostsLambdaHandler implements RequestHandler<APIGatewayProxyRequest
         } catch (ApiException ex) {
             throw ex;
         } catch (Exception ex) {
+            System.err.println("JWT validation failed: " + ex.getClass().getSimpleName() + " - " + ex.getMessage());
             throw new ApiException(401, "UNAUTHORIZED", "Invalid token");
         }
     }
@@ -204,16 +215,21 @@ public class PostsLambdaHandler implements RequestHandler<APIGatewayProxyRequest
     private static Set<String> scopesFromToken(DecodedJWT token) {
         Claim permissions = token.getClaim("permissions");
         List<String> fromPermissions = permissions.isNull() ? Collections.emptyList()
-                : permissions.asList(String.class);
+                : safeList(permissions.asList(String.class));
 
         Claim scope = token.getClaim("scope");
-        List<String> fromScope = scope.isNull() ? Collections.emptyList()
-                : Arrays.stream(scope.asString().split(" ")).filter(s -> !s.isBlank()).toList();
+        String scopeValue = scope.isNull() ? null : scope.asString();
+        List<String> fromScope = (scopeValue == null || scopeValue.isBlank()) ? Collections.emptyList()
+                : Arrays.stream(scopeValue.split(" ")).filter(s -> !s.isBlank()).toList();
 
         Claim scp = token.getClaim("scp");
-        List<String> fromScp = scp.isNull() ? Collections.emptyList() : scp.asList(String.class);
+        List<String> fromScp = scp.isNull() ? Collections.emptyList() : safeList(scp.asList(String.class));
 
-        return List.of(fromPermissions, fromScope, fromScp).stream().flatMap(List::stream).collect(Collectors.toSet());
+        return Stream.of(fromPermissions, fromScope, fromScp).flatMap(List::stream).collect(Collectors.toSet());
+    }
+
+    private static List<String> safeList(List<String> values) {
+        return values == null ? Collections.emptyList() : values;
     }
 
     private static String path(APIGatewayProxyRequestEvent event) {
@@ -223,15 +239,41 @@ public class PostsLambdaHandler implements RequestHandler<APIGatewayProxyRequest
         return event.getPath();
     }
 
+    private static boolean isCreatePostPath(String path) {
+        String normalizedPath = path.endsWith("/") && path.length() > 1
+                ? path.substring(0, path.length() - 1)
+                : path;
+
+        return normalizedPath.endsWith("/api/posts") || normalizedPath.endsWith("/posts");
+    }
+
     private static String header(APIGatewayProxyRequestEvent event, String key) {
-        if (event.getHeaders() == null) {
-            return null;
+        if (event.getHeaders() != null) {
+            String value = event.getHeaders().get(key);
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+
+            String lowerCaseValue = event.getHeaders().get(key.toLowerCase());
+            if (lowerCaseValue != null && !lowerCaseValue.isBlank()) {
+                return lowerCaseValue;
+            }
         }
-        String value = event.getHeaders().get(key);
-        if (value != null) {
-            return value;
+
+        if (event.getMultiValueHeaders() != null) {
+            List<String> values = event.getMultiValueHeaders().get(key);
+            if (values != null && !values.isEmpty() && values.get(0) != null && !values.get(0).isBlank()) {
+                return values.get(0);
+            }
+
+            List<String> lowerCaseValues = event.getMultiValueHeaders().get(key.toLowerCase());
+            if (lowerCaseValues != null && !lowerCaseValues.isEmpty() && lowerCaseValues.get(0) != null
+                    && !lowerCaseValues.get(0).isBlank()) {
+                return lowerCaseValues.get(0);
+            }
         }
-        return event.getHeaders().get(key.toLowerCase());
+
+        return null;
     }
 
     private static <T> T parse(String json, Class<T> clazz) {
