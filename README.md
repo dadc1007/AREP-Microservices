@@ -43,3 +43,9 @@ Para informacion detallada de instalacion, ejecucion y pruebas:
 - Frontend: [frontend/README.md](frontend/README.md)
 - Backend (Monolito): [monolith/README.md](monolith/README.md)
 - Microservicios (Lambda + API Gateway): [microservices/README.md](microservices/README.md)
+
+## Video de demo
+
+Video de presentacion del proyecto:
+
+- [Ver video](https://drive.google.com/file/d/1NKcNzvnyo6GJ67r8-Y3v5CO7oO1TeVSd/view?usp=sharing)
